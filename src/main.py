@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import requests
 
 import numpy as np
 import pandas as pd
@@ -86,6 +87,16 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
+async def image(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    response = openai.images.generate(
+        prompt=update.message.text,
+        model="dall-e-3",
+        n=1,
+        size="1024x1024"
+    )
+    image_url = response.data[0].url
+    image_response = requests.get(image_url)
+    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=image_response.content)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
@@ -157,9 +168,11 @@ if __name__ == "__main__":
     chat_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), chat)
     start_handler = CommandHandler("start", start)
     mozilla_handler = CommandHandler("mozilla", mozilla)
+    image_handler = CommandHandler("image", image)
 
     application.add_handler(start_handler)
     application.add_handler(chat_handler)
     application.add_handler(mozilla_handler)
+    application.add_handler(image_handler)
 
     application.run_polling()
